@@ -152,6 +152,7 @@ app.get("/getNote/:noteId", express.json(), async (req, res) => {
           username: decoded.username,
           _id: new ObjectId(noteId),
         });
+        console.log(decoded.username)
         if (!data) {
           return res
             .status(404)
@@ -199,17 +200,24 @@ app.get("/getAllNotes",express.json(), async (req, res) => {
       return res.status(400).json({ error: "Invalid note ID." });
     }
 
+    if (!title && !content){
+      return res.status(400).json({ error: "New title or content is required to update" });
+    }
+
     const token = req.headers.authorization.split(" ")[1];
     jwt.verify(token, "secret-key", async (err, decoded) => {
         if (err) {
             return res.status(401).send("Unauthorized.");
         }
-
+        var newData = {};
+        if (title) newData = {...newData, title};
+        if (content) newData = {...newData, content};
+        console.log(newData);
         // Find note with given ID
         const collection = db.collection(COLLECTIONS.notes);
         const data = await collection.findOneAndUpdate(
-            { _id: new ObjectId(noteId) },
-            {$set: {title, content}}
+            { _id: new ObjectId(noteId), username: decoded.username },
+            {$set: newData}
         );
         if (!data) {
             return res
